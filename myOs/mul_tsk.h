@@ -20,16 +20,15 @@
 
   Created 2020 by hamayan (hamayan.contact@gmail.com)
 ---------------------------------------- */
+
 #ifndef _MULTITASK_H_
 #define _MULTITASK_H_
 
-//#include <stdtypes.h>
-//#include <setjmp.h>
 #include "derivertive.h"
 
-/****************************************************************************/
-/* サービスコールデータ型                                                   */
-/****************************************************************************/
+/* ----------------------------------------
+ defines service call
+---------------------------------------- */
 typedef  int            ID;
 typedef  int            ER;
 typedef  unsigned char  STAT;
@@ -39,7 +38,7 @@ typedef  unsigned long  RELTIM;
 typedef  unsigned long  TMO;
 typedef  unsigned int   UINT;
 
-typedef  long           VP_INT;  /* VP または INT */
+typedef  long           VP_INT;  /* VP or INT */
 typedef struct
 {
   void *sp;
@@ -49,30 +48,26 @@ typedef struct
 
 enum TSK_ID {TASK1,TASK2,TASK3,TASK4,TASK5,TASK6,TASK7,TASK8,TASK9,TASK10,};
 
-/****************************************************************************/
-/* セマフォ管理                                                             */
-/****************************************************************************/
+/* ----------------------------------------
+ manege semapfore
+---------------------------------------- */
 typedef struct
 {
-  unsigned int sigCount;  /*sig_semでカウントアップ*/
-  unsigned int waiCount;  /*wai_semでカウントアップ*/
+  unsigned int sigCount;
+  unsigned int waiCount;
 } SEM_OBJECT;
 
 typedef struct t_rsem
 {
-  ID    wtskid;  /* セマフォ待ち行列の先頭タスクID */
-  UINT  semcnt;  /* セマフォの現在の資源数 */
+  ID    wtskid;  // First task ID of semaphore queue
+  UINT  semcnt;  // Current number of semaphore resources
 } T_RSEM;
 
-
-/****************************************************************************/
-/* パケット形式                                                             */
-/****************************************************************************/
 typedef  struct t_rtst{ STAT tskstat; STAT tskwait; } T_RTST;
 
-/****************************************************************************/
-/* 定数とマクロ                                                             */
-/****************************************************************************/
+/* ----------------------------------------
+ constants and macros
+---------------------------------------- */
 #define  E_OK        0
 #define  TMO_POL     0
 #define  TMO_FEVR    (-1)
@@ -113,9 +108,9 @@ typedef  struct t_rtst{ STAT tskstat; STAT tskwait; } T_RTST;
 #define  E_WBLK   (-57)
 #define  E_BOVR   (-58)
 
-/****************************************************************************/
-/* サービスコール                                                           */
-/****************************************************************************/
+/* ----------------------------------------
+ prototype
+---------------------------------------- */
 //ER   reg_tsk( ID tid, void (*task)(void), void *stk, unsigned int sz );
 ER reg_tsk( ID tid, void *tsk, void *stk, int stk_sz, VP_INT exinf1, VP_INT exinf2, VP_INT exinf3, VP_INT exinf4 );
 ER   sta_tsk( ID tid );
@@ -146,10 +141,10 @@ ER   ref_sem( ID semid, T_RSEM *pk_rsem );
   #define  unl_cpu()  __asm__("cpsie i\n\t")
 #endif
 
-/****************************************************************************/
-/* ディスパッチャー                                                         */
-/****************************************************************************/
-void sta_ctx( void *exe );             /*コンテキストをロードし、タスク実行*/
-void swi_ctx( void *pre, void *post);  /*コンテキストの切り替え*/
+/* ----------------------------------------
+ disatcher prototype
+---------------------------------------- */
+void sta_ctx( void *exe );  // load context and task start.
+void swi_ctx( void *pre, void *post);  // switch context.
 
 #endif  /*_MULTITASK_H_*/

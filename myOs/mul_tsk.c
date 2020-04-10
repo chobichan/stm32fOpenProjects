@@ -21,30 +21,26 @@
   Created 2020 by hamayan (hamayan.contact@gmail.com)
 ---------------------------------------- */
 
-#include "mul_tsk.h"  //必要
+#include "mul_tsk.h"
 
-/****************************************************************************/
-/* 大域変数                                                                 */
-/****************************************************************************/
-extern SYSTIM systim;  //1msでインクリメントする変数
-ID cur_tid;  //現行タスクID
-static unsigned char disable_dispatch;  //0以外はディスパッチ禁止
-static unsigned char startTaskContext;  //0はOSがスタートしていない
+/* ----------------------------------------
+ global variables
+---------------------------------------- */
+extern SYSTIM systim;  // system timer was increment by 1 at 1 milli second.
+ID cur_tid;  // current task ID
+static unsigned char disable_dispatch;  // Dispatch prohibited except 0
+static unsigned char startTaskContext;  // 0 means OS has not started
 
-/****************************************************************************/
-/* サービスコール                                                           */
-/****************************************************************************/
+/* ----------------------------------------
+ task control block
+---------------------------------------- */
+TASK_CONTROL_BLOCK tcb[MAX_TASK_NUMBER];   // Area for saving environment variables (context) of tasks
 
-/****************************************************************************/
-/* タスクコンテキスト                                                       */
-/****************************************************************************/
-TASK_CONTROL_BLOCK tcb[MAX_TASK_NUMBER];   //タスクの環境変数(コンテキスト)を保存する領域
-
-/****************************************************************************/
-/* タスク登録                                                               */
-/* タスクID、エントリーポイント、スタック領域、スタックサイズ、             */
-/* 起動時引数を4つまで登録できる。                           、             */
-/****************************************************************************/
+/* ----------------------------------------
+ regist task
+  You can register task IDs, entry points, stack areas, stack sizes, and startup arguments.
+  Startup arguments are up to four variables.
+---------------------------------------- */
 ER reg_tsk( ID tid, void *tsk, void *stk, int stk_sz,
   VP_INT exinf1, VP_INT exinf2, VP_INT exinf3, VP_INT exinf4 )
 {
@@ -52,8 +48,8 @@ ER reg_tsk( ID tid, void *tsk, void *stk, int stk_sz,
 
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_ID;
 
-  /*タスクのスタックの初期化*/
-  tcb[tid].sp = (void *)((char *)stk + stk_sz - (4 * (9 + 2)));  /*r6からr14までこの領域に保存される*/
+  // Initialize task stack
+  tcb[tid].sp = (void *)((char *)stk + stk_sz - (4 * (9 + 2)));  // Register r6 to register r14 are stored in this area
   ptr = (VP_INT *)tcb[tid].sp;
   ptr[9] = (VP_INT)tsk;  /*pc*/
   //*((unsigned long *)(stk + stk_sz - (4 * 2))) = (unsigned long)tsk;
@@ -67,22 +63,21 @@ ER reg_tsk( ID tid, void *tsk, void *stk, int stk_sz,
   return E_OK;
 }
 
-/****************************************************************************/
-/* タスク開始                                                               */
-/* 実際はスケジューラーに登録                                               */
-/****************************************************************************/
+/* ----------------------------------------
+ start task (Actually register to scheduler)
+---------------------------------------- */
 ER sta_tsk( ID tid )
 {
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_ID;
 
-  tcb[tid].rdy_flg = TTS_RDY;  //タスク登録
+  tcb[tid].rdy_flg = TTS_RDY;  // Put a task in a ready state
 
   return E_OK;
 }
 
-/****************************************************************************/
-/* ラウンドロビン開始                                                       */
-/****************************************************************************/
+/* ----------------------------------------
+ Round robin start
+---------------------------------------- */
 ER sta_rdq( ID tid )
 {
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_ID;
@@ -95,10 +90,9 @@ ER sta_rdq( ID tid )
   return E_OK;
 }
 
-/****************************************************************************/
-/* Rotate Round Que                                                         */
-/* タスクQUEを回す                                                          */
-/****************************************************************************/
+/* ----------------------------------------
+ Rotate Round Que
+---------------------------------------- */
 ER rot_rdq( void )
 {
   int i;
@@ -125,10 +119,9 @@ ER rot_rdq( void )
   return E_PAR;
 }
 
-/****************************************************************************/
-/* Rotate Round Que                                                         */
-/* 割込みの中でタスクQUEを回す                                              */
-/****************************************************************************/
+/* ----------------------------------------
+ Rotate Round Que in interrupt
+---------------------------------------- */
 void irot_rdq( void )
 {
   int i;
@@ -150,10 +143,11 @@ void irot_rdq( void )
   }
 }
 
-/****************************************************************************/
-/* 遅延処理                                                                 */
-/* 条件が一致するまでタスクスイッチを継続                                   */
-/****************************************************************************/
+
+/* ----------------------------------------
+ Delay processing
+  Continue task switch until time comes
+---------------------------------------- */
 ER dly_tsk( RELTIM dly )
 {
   RELTIM lastTim = systim;
@@ -187,10 +181,10 @@ ER dly_tsk( RELTIM dly )
   return E_RLWAI;
 }
 
-/****************************************************************************/
-/* 待ち状態の強制解除                                                       */
-/* 対象は該当タスク                                                         */
-/****************************************************************************/
+/* ----------------------------------------
+ Forced release of waiting state
+  Target is applicable task
+---------------------------------------- */
 ER rel_wai( ID tid )
 {
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_ID;     /*不正ID*/
@@ -202,9 +196,9 @@ ER rel_wai( ID tid )
   return E_OK;
 }
 
-/****************************************************************************/
-/* タスクの状態取得(簡易版)                                                 */
-/****************************************************************************/
+/* ----------------------------------------
+ Get task status (Abridged edition)
+---------------------------------------- */
 ER ref_tst( ID tid, T_RTST *pk_rtst )
 {
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_NOEXS;
@@ -221,9 +215,9 @@ ER ref_tst( ID tid, T_RTST *pk_rtst )
   return E_OK;
 }
 
-/****************************************************************************/
-/* 強制タスク待ち状態に遷移                                                 */
-/****************************************************************************/
+/* ----------------------------------------
+ Transition to forced task wait state
+---------------------------------------- */
 ER sus_tsk( ID tid )
 {
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_ID;
@@ -236,10 +230,10 @@ ER sus_tsk( ID tid )
   return E_OK;
 }
 
-/****************************************************************************/
-/* 強制待ち状態の強制解除                                                   */
-/* 対象は該当タスク                                                         */
-/****************************************************************************/
+/* ----------------------------------------
+ Canceling the forced wait state
+  Target is applicable task
+---------------------------------------- */
 ER rsm_tsk( ID tid )
 {
   if( tid < 0 || tid >= MAX_TASK_NUMBER ) return E_ID;     /*不正ID*/
@@ -253,10 +247,10 @@ ER rsm_tsk( ID tid )
   return E_OK;
 }
 
-/****************************************************************************/
-/* 自タスクの終了                                                           */
-/* スケジューラーテーブルの状態をDORMANTにする                              */
-/****************************************************************************/
+/* ----------------------------------------
+ Terminate own task
+  Move the status of the scheduler table to DORMANT
+---------------------------------------- */
 void ext_tsk( void )
 {
   tcb[cur_tid].rdy_flg = TTS_DMT;  //該当タスクをDORMANTにする
@@ -267,10 +261,10 @@ void ext_tsk( void )
   }
 }
 
-/****************************************************************************/
-/* 起動時引数の引き取り                                                     */
-/* exinfは引き取り先、sizeは引き取り数。最大は4個まで。                     */
-/****************************************************************************/
+/* ----------------------------------------
+ Receiving startup arguments
+  exinf is the receiving destination, size is the number of receiving, up to 4
+---------------------------------------- */
 ER get_par( VP_INT *exinf, int size )
 {
   int i;
@@ -284,9 +278,9 @@ ER get_par( VP_INT *exinf, int size )
   return E_OK;
 }
 
-/****************************************************************************/
-/* ディスパッチ禁止                                                         */
-/****************************************************************************/
+/* ----------------------------------------
+ Dispatch prohibited
+---------------------------------------- */
 ER dis_dsp( void )
 {
   loc_cpu();
@@ -295,9 +289,9 @@ ER dis_dsp( void )
   return E_OK;
 }
 
-/****************************************************************************/
-/* ディスパッチ許可                                                         */
-/****************************************************************************/
+/* ----------------------------------------
+ Dispatch permission
+---------------------------------------- */
 ER ena_dsp( void )
 {
   loc_cpu();
@@ -307,12 +301,12 @@ ER ena_dsp( void )
 }
 
 extern volatile SEM_OBJECT sem_obj[];
-/****************************************************************************/
-/* セマフォ待ち                                                             */
-/* 現在のwaiCountを取得後、waiCountのカウントアップを行う。                 */
-/* 現在のsigCountと取得したwaiCountが一致するまで待ち状態となる。           */
-/* プリエンプティブと言う訳ではないので、loc_cpuは要らない事は要らない。    */
-/****************************************************************************/
+/* ----------------------------------------
+ Waiting for semaphore
+  After obtaining the current waiCount, count up waiCount
+  Wait until the current sigCount matches the acquired waiCount
+  It's not preemptive, so loc_cpu doesn't need to be unnecessary
+---------------------------------------- */
 ER wai_sem( ID semid )
 {
   if( semid <= 0 ) return E_ID;
@@ -344,12 +338,12 @@ ER wai_sem( ID semid )
   return E_RLWAI;
 }
 
-/****************************************************************************/
-/* セマフォのポーリング                                                             */
-/* 現在のwaiCountを取得後、waiCountのカウントアップを行う。                 */
-/* 現在のsigCountと取得したwaiCountが一致するまで待ち状態となる。           */
-/* プリエンプティブと言う訳ではないので、loc_cpuは要らない事は要らない。    */
-/****************************************************************************/
+/* ----------------------------------------
+ Semaphore polling
+  After obtaining the current waiCount, count up waiCount
+  Wait until the current sigCount matches the acquired waiCount
+  It's not preemptive, so loc_cpu doesn't need to be unnecessary
+---------------------------------------- */
 ER pol_sem( ID semid )
 {
   if( semid <= 0 ) return E_ID;
@@ -370,11 +364,11 @@ ER pol_sem( ID semid )
   return E_TMOUT;
 }
 
-/****************************************************************************/
-/* セマフォ返却                                                             */
-/* 現在のsigCountのカウントアップを行う。                                   */
-/* プリエンプティブと言う訳ではないので、loc_cpuは要らない事は要らない。    */
-/****************************************************************************/
+/* ----------------------------------------
+ Return semaphore
+  Count up the current sigCount
+  It's not preemptive, so loc_cpu doesn't need to be unnecessary
+---------------------------------------- */
 ER sig_sem( ID semid )
 {
   if( semid <= 0 ) return E_ID;
@@ -395,9 +389,9 @@ ER isig_sem( ID semid )
   return E_OK;
 }
 
-/****************************************************************************/
-/* セマフォ参照                                                             */
-/****************************************************************************/
+/* ----------------------------------------
+ Refer to semaphore
+---------------------------------------- */
 ER ref_sem( ID semid, T_RSEM *pk_rsem )
 {
   if( semid <= 0 ) return E_ID;
