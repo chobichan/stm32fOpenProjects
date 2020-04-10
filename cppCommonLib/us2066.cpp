@@ -1,6 +1,27 @@
 /* ----------------------------------------
   US2066 oled display utilities
+  for STMicroelectronics SPL library
+
+  Copyright (c) 2020 hamayan (hamayan.contact@gmail.com).
+  All right reserved.
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+  Created 2020 by hamayan (hamayan.contact@gmail.com)
 ---------------------------------------- */
+
 #include  <us2066.h>
 
 /* ----------------------------------------
@@ -240,7 +261,7 @@ int US2066::locate( int x, int y )
 ---------------------------------------- */
 int US2066::contrast( uint8_t cnt )
 {
-  //コントラスト調整
+  //繧ｳ繝ｳ繝医Λ繧ｹ繝郁ｪｿ謨ｴ
   int ret = command( 0x2a );  //RE=1
   command( 0x79 );  //SD=1
   command( 0x81 );  //contrast set
