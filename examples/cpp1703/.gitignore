@@ -1,0 +1,13 @@
+# git ignore file
+# designed by hamayan.
+
+# not need a.out
+a.out
+
+# not need cpp1703 folder
+cpp1703/
+
+# not need logs folder
+logs/
+
+
